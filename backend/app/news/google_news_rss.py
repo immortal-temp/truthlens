@@ -21,11 +21,14 @@ def parse_rss_pubdate(pub_date_str: str) -> str:
     except Exception:
         return pub_date_str
 
+import html
+
 def clean_html(raw_html: str) -> str:
-    """Removes HTML tags and cleans up description snippet."""
+    """Removes HTML tags and decodes HTML entities."""
     if not raw_html:
         return ""
     clean = re.sub(r'<[^>]+>', ' ', raw_html)
+    clean = html.unescape(clean)
     return " ".join(clean.split()).strip()
 
 def clean_rss_query(q: str) -> str:
@@ -69,7 +72,8 @@ async def search_google_news_rss(query: str, max_results: int = 10) -> List[Norm
             articles: List[NormalizedArticle] = []
             
             for item in items[:max_results]:
-                title = (item.findtext("title") or "").strip()
+                title_raw = (item.findtext("title") or "").strip()
+                title = html.unescape(title_raw).strip()
                 link = (item.findtext("link") or "").strip()
                 pub_date = (item.findtext("pubDate") or "").strip()
                 description_raw = (item.findtext("description") or "").strip()
