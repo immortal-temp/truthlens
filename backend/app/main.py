@@ -27,10 +27,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS configuration
+# CORS configuration - Allow all web origins (localhost, Render, Vercel, Netlify)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origin_list or ["*"],
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
