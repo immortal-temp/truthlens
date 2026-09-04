@@ -138,34 +138,28 @@ def compute_evidence_score_and_verdict(
         total_score=total_score
     )
 
-    # Verdict Engine (Calibrated Logic)
-    verdict = "INSUFFICIENT_EVIDENCE"
-    misinformation_type = "Insufficient Evidence"
+    # Verdict Engine (Calibrated to Exact User Thresholds):
+    # >= 75: True (LIKELY_TRUE)
+    # 60 to 75: Probably True (PARTIALLY_TRUE)
+    # 40 to 60: Don't Know / Unverified (UNVERIFIED)
+    # 20 to 40: Misleading (MISLEADING)
+    # < 20: False (LIKELY_FALSE)
 
-    if contra_count >= 1 and (len(supporting) == 0 or contra_count >= len(supporting)):
-        verdict = "LIKELY_FALSE"
-        misinformation_type = "Fabricated Claim"
-    elif total_score >= 75.0:
+    if total_score >= 75.0:
         verdict = "LIKELY_TRUE"
         misinformation_type = "Verified Genuine News"
-    elif date_analysis.is_old_news_reused:
-        verdict = "MISLEADING"
-        misinformation_type = "Old News Presented as New"
-    elif total_articles < 2 or total_unique_clusters < 1:
-        verdict = "INSUFFICIENT_EVIDENCE"
-        misinformation_type = "Insufficient Evidence"
-    elif total_score >= 50.0 and (len(supporting) >= 1 or len(partially_sup) >= 1):
+    elif total_score >= 60.0:
         verdict = "PARTIALLY_TRUE"
-        misinformation_type = "Partially True"
-    elif total_score >= 35.0:
+        misinformation_type = "Probably True"
+    elif total_score >= 40.0:
+        verdict = "UNVERIFIED"
+        misinformation_type = "Don't Know / Insufficient Evidence"
+    elif total_score >= 20.0:
         verdict = "MISLEADING"
-        misinformation_type = "Out-of-Context"
-    elif contra_count > 0 or total_score < 35.0:
+        misinformation_type = "Misleading" if not date_analysis.is_old_news_reused else "Old News Presented as New"
+    else:
         verdict = "LIKELY_FALSE"
         misinformation_type = "False Information"
-    else:
-        verdict = "UNVERIFIED"
-        misinformation_type = "Unverified Claim"
 
     return breakdown, summary, verdict, misinformation_type
 

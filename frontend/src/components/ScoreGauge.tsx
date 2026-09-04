@@ -10,10 +10,11 @@ interface ScoreGaugeProps {
 export const ScoreGauge: React.FC<ScoreGaugeProps> = ({ score, breakdown }) => {
   // Gauge color mapping
   const getScoreColor = (val: number) => {
-    if (val >= 75) return '#10b981'; // Emerald
-    if (val >= 50) return '#06b6d4'; // Cyan
-    if (val >= 35) return '#f59e0b'; // Amber
-    return '#f43f5e'; // Rose
+    if (val >= 75) return '#10b981'; // Emerald (True)
+    if (val >= 60) return '#06b6d4'; // Cyan (Probably True)
+    if (val >= 40) return '#64748b'; // Slate (Don't Know)
+    if (val >= 20) return '#f59e0b'; // Amber (Misleading)
+    return '#f43f5e'; // Rose (False)
   };
 
   const strokeColor = getScoreColor(score);

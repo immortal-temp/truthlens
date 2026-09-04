@@ -9,18 +9,32 @@ interface VerdictBadgeProps {
 export const VerdictBadge: React.FC<VerdictBadgeProps> = ({ verdict, size = 'md' }) => {
   const config = {
     LIKELY_TRUE: {
-      label: 'Likely True',
+      label: 'True',
       bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
       glow: 'glow-true',
       icon: CheckCircle,
       desc: 'Strong multi-source corroboration and high credibility confirmation.'
     },
     PARTIALLY_TRUE: {
-      label: 'Partially True',
-      bg: 'bg-teal-500/10 border-teal-500/30 text-teal-300',
+      label: 'Probably True',
+      bg: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300',
       glow: '',
       icon: Info,
-      desc: 'Contains factual elements alongside minor inaccuracies or unconfirmed nuances.'
+      desc: 'Corroborating reporting found with high confidence.'
+    },
+    UNVERIFIED: {
+      label: "Don't Know",
+      bg: 'bg-slate-500/10 border-slate-500/30 text-slate-300',
+      glow: 'glow-unverified',
+      icon: HelpCircle,
+      desc: 'Ambiguous, speculative, or lacking authoritative confirmation.'
+    },
+    INSUFFICIENT_EVIDENCE: {
+      label: "Don't Know",
+      bg: 'bg-slate-500/10 border-slate-500/30 text-slate-300',
+      glow: 'glow-unverified',
+      icon: AlertOctagon,
+      desc: 'Not enough verifiable public reporting found.'
     },
     MISLEADING: {
       label: 'Misleading',
@@ -30,25 +44,11 @@ export const VerdictBadge: React.FC<VerdictBadgeProps> = ({ verdict, size = 'md'
       desc: 'Presents facts out of context, exaggerated, or old news reused as new.'
     },
     LIKELY_FALSE: {
-      label: 'Likely False',
+      label: 'False',
       bg: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
       glow: 'glow-false',
       icon: XCircle,
-      desc: 'Directly contradicted by credible news sources or fact-checking debunks.'
-    },
-    UNVERIFIED: {
-      label: 'Unverified',
-      bg: 'bg-slate-500/10 border-slate-500/30 text-slate-300',
-      glow: 'glow-unverified',
-      icon: HelpCircle,
-      desc: 'Reporting is ambiguous, speculative, or lacking authoritative confirmation.'
-    },
-    INSUFFICIENT_EVIDENCE: {
-      label: 'Insufficient Evidence',
-      bg: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300',
-      glow: '',
-      icon: AlertOctagon,
-      desc: 'Not enough public reporting found. System conservative policy avoids guessing.'
+      desc: 'Contradicted by credible news sources or fact-checking debunks.'
     }
   }[verdict] || {
     label: verdict,
