@@ -36,9 +36,31 @@ async def extract_claim_entities(claim: str, date: str, time: str = None) -> Tup
         system_instruction=EXTRACTION_SYSTEM_PROMPT
     )
 
-    if data:
+    if data and isinstance(data, dict):
+        sanitized = {}
+        list_fields = ["people", "organizations", "locations", "events", "amounts", "dates", "times", "countries", "important_keywords"]
+        for k, v in data.items():
+            if k in list_fields:
+                if isinstance(v, list):
+                    sanitized[k] = [str(x).strip() for x in v if str(x).strip()]
+                elif isinstance(v, str) and v.strip() and v.strip().lower() != "none":
+                    sanitized[k] = [v.strip()]
+                else:
+                    sanitized[k] = []
+            elif k in ("main_claim", "category"):
+                sanitized[k] = str(v) if v is not None else ""
+            else:
+                sanitized[k] = v
+        for lf in list_fields:
+            if lf not in sanitized:
+                sanitized[lf] = []
+        if "main_claim" not in sanitized or not sanitized["main_claim"]:
+            sanitized["main_claim"] = claim.strip()
+        if "category" not in sanitized or not sanitized["category"]:
+            sanitized["category"] = "Other"
+
         try:
-            return ExtractedEntities(**data), provider_used
+            return ExtractedEntities(**sanitized), provider_used
         except Exception as e:
             logger.warning(f"Extracted entities schema validation failed: {e}. Using sanitized fallback.")
 

@@ -16,9 +16,15 @@ def sanitize_query(q: str) -> str:
     return " ".join(clean.split()).strip()
 
 async def search_gnews(query: str, max_results: int = 8) -> List[NormalizedArticle]:
-    api_key = settings.GNEWS_API_KEY
-    if not api_key:
-        logger.debug("GNews API key not configured.")
+    keys = [
+        k.strip() for k in [
+            settings.GNEWS_API_KEY,
+            settings.GNEWS_API_KEY_2,
+            settings.GNEWS_API_KEY_3
+        ] if k and len(k.strip()) > 5
+    ]
+    if not keys:
+        logger.debug("GNews API has no keys configured.")
         return []
 
     clean_q = sanitize_query(query)
@@ -26,31 +32,37 @@ async def search_gnews(query: str, max_results: int = 8) -> List[NormalizedArtic
         return []
 
     url = "https://gnews.io/api/v4/search"
-    params = {
-        "q": clean_q,
-        "token": api_key,
-        "lang": "en",
-        "max": max_results,
-        "sortby": "relevance"
-    }
 
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            await db.record_api_call("gnews")
-            resp = await client.get(url, params=params)
-            if resp.status_code == 200:
-                data = resp.json()
-                articles_raw = data.get("articles", [])
-                results = []
-                for item in articles_raw:
-                    norm = normalize_gnews_article(item, query_used=query)
-                    if norm:
-                        results.append(norm)
-                return results
-            elif resp.status_code == 429:
-                logger.warning("GNews rate limit exceeded (429).")
-            else:
-                logger.error(f"GNews error {resp.status_code}")
-    except Exception:
-        logger.error("GNews request failed.")
+    for idx, api_key in enumerate(keys):
+        params = {
+            "q": clean_q,
+            "token": api_key,
+            "lang": "en",
+            "max": max_results,
+            "sortby": "relevance"
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                await db.record_api_call("gnews")
+                resp = await client.get(url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    articles_raw = data.get("articles", [])
+                    results = []
+                    for item in articles_raw:
+                        norm = normalize_gnews_article(item, query_used=query)
+                        if norm:
+                            results.append(norm)
+                    return results
+                elif resp.status_code in (429, 403):
+                    logger.warning(f"GNews key #{idx + 1} quota/rate limit reached ({resp.status_code}). Failing over to next key...")
+                    continue
+                else:
+                    logger.error(f"GNews error with key #{idx + 1}: {resp.status_code}")
+                    continue
+        except Exception:
+            logger.error(f"GNews request failed for key #{idx + 1}.")
+            continue
+
     return []

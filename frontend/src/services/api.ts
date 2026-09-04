@@ -46,7 +46,7 @@ export const api = {
   async getVerification(id: string): Promise<VerificationResult> {
     const res = await fetch(`${API_BASE}/verification/${id}`);
     if (!res.ok) {
-      throw new Error('Verification not found or expired from 20-minute working session.');
+      throw new Error('Verification record not found.');
     }
     return res.json();
   },

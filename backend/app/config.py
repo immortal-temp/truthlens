@@ -13,20 +13,34 @@ class Settings(BaseSettings):
     MONGODB_DB_NAME: str = "truthlens"
     MONGODB_TTL_SECONDS: int = 1200  # 20 minutes default retention
 
-    # LLMs
+    # LLMs - Primary, Secondary, and Tertiary Keys
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.6-flash"
+    GEMINI_API_KEY_2: str = ""
+    GEMINI_API_KEY_3: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     GROQ_API_KEY: str = ""
+    GROQ_API_KEY_2: str = ""
+    GROQ_API_KEY_3: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     OPENROUTER_API_KEY: str = ""
+    OPENROUTER_API_KEY_2: str = ""
+    OPENROUTER_API_KEY_3: str = ""
     OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct"
 
-    # News APIs
+    # News APIs - Primary, Secondary, and Tertiary Keys
     GNEWS_API_KEY: str = ""
+    GNEWS_API_KEY_2: str = ""
+    GNEWS_API_KEY_3: str = ""
+
     NEWSDATA_API_KEY: str = ""
+    NEWSDATA_API_KEY_2: str = ""
+    NEWSDATA_API_KEY_3: str = ""
+
     NEWSAPI_API_KEY: str = ""
+    NEWSAPI_API_KEY_2: str = ""
+    NEWSAPI_API_KEY_3: str = ""
 
     # Demo Mode
     DEMO_MODE: bool = False

@@ -100,16 +100,19 @@ export const Results: React.FC = () => {
   }
 
   if (error || !verification) {
+    const isQuotaError = error?.toLowerCase().includes('quota') || error?.includes('429');
     return (
       <div className="max-w-xl mx-auto px-4 py-16 sm:py-24 text-center space-y-5">
         <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/5">
           <AlertCircle className="w-7 h-7" />
         </div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-white">Session Timed Out or Quota Limit</h2>
+        <h2 className="text-xl sm:text-2xl font-extrabold text-white">
+          {isQuotaError ? 'API Quota Exhausted' : 'Verification Record Unavailable'}
+        </h2>
         <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
-          {error?.includes('quota') || error?.includes('429')
-            ? 'An AI model quota was temporarily exhausted. Secondary fallback models will automatically take over on your next attempt.'
-            : 'The active verification session expired or an AI model rate limit occurred. Please try again to verify with remaining model credits.'}
+          {isQuotaError
+            ? 'API quota exhausted for all configured AI models. Please try again tomorrow or configure additional fallback API keys in your settings.'
+            : (error || 'The requested verification record could not be loaded. Please try again.')}
         </p>
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
@@ -117,7 +120,7 @@ export const Results: React.FC = () => {
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-sky-500/25 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
-            Try Again / Verify New Claim
+            Verify New Claim
           </Link>
         </div>
       </div>

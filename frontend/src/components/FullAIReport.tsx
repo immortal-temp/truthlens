@@ -30,8 +30,18 @@ export const FullAIReport: React.FC<FullAIReportProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-base text-slate-100">Structured AI Evidence Analysis</h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950/60 border border-sky-800 text-sky-300">
-                Engine: {providerUsed.includes('fallback') ? 'CROSS-SOURCE SYNTHESIS' : providerUsed.toUpperCase()}
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                providerUsed === 'all_quotas_exhausted' 
+                  ? 'bg-amber-950/60 border-amber-800 text-amber-300' 
+                  : 'bg-sky-950/60 border-sky-800 text-sky-300'
+              }`}>
+                Engine: {
+                  providerUsed === 'all_quotas_exhausted' 
+                    ? 'QUOTA EXHAUSTED (DIRECT SYNTHESIS)' 
+                    : providerUsed.includes('fallback') 
+                      ? 'CROSS-SOURCE SYNTHESIS' 
+                      : providerUsed.toUpperCase()
+                }
               </span>
             </div>
             <span className="text-xs text-slate-400">Strictly synthesized from indexed articles — zero invented facts</span>
@@ -42,6 +52,18 @@ export const FullAIReport: React.FC<FullAIReportProps> = ({
           {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </button>
       </div>
+
+      {providerUsed === 'all_quotas_exhausted' && (
+        <div className="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2.5">
+          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-bold block">API Quota Exhausted for Configured AI Models</span>
+            <span className="text-amber-200/80 leading-relaxed block">
+              All primary, secondary, and tertiary model quotas are currently exhausted. The report below was synthesized directly from indexed news sources without external LLM processing. Please try again tomorrow or configure additional API keys.
+            </span>
+          </div>
+        </div>
+      )}
 
       {isOpen && (
         <div className="space-y-6 pt-2 border-t border-slate-800/80">

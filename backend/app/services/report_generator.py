@@ -98,9 +98,23 @@ Produce a comprehensive, grounded verification report based strictly on the evid
         system_instruction=REPORT_SYSTEM_PROMPT
     )
 
-    if data:
+    if data and isinstance(data, dict):
+        sanitized = dict(data)
+        list_fields = ["what_happened", "key_people", "organizations", "locations", "important_numbers", "limitations"]
+        for lf in list_fields:
+            v = sanitized.get(lf)
+            if isinstance(v, list):
+                sanitized[lf] = [str(x).strip() for x in v if str(x).strip()]
+            elif isinstance(v, str) and v.strip():
+                sanitized[lf] = [v.strip()]
+            else:
+                sanitized[lf] = []
+
+        if not isinstance(sanitized.get("timeline"), list):
+            sanitized["timeline"] = []
+
         try:
-            return AIReportResponse(**data), provider_used
+            return AIReportResponse(**sanitized), provider_used
         except Exception as e:
             logger.warning(f"AI Report schema parsing error: {e}. Building deterministic grounded report.")
 
