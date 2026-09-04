@@ -67,11 +67,11 @@ export const KeyEvidenceCards: React.FC<KeyEvidenceCardsProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Evidence Columns Grid */}
-      <div className={`grid grid-cols-1 ${hasContradictions ? 'lg:grid-cols-12' : ''} gap-6 items-start`}>
+      {/* Evidence Sections - Sequentially Stacked (Supporting first, then Contradicting below) */}
+      <div className="flex flex-col gap-6 w-full">
         
-        {/* Supporting Evidence Column */}
-        <div className={`glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col ${hasContradictions ? 'lg:col-span-7' : 'w-full'}`}>
+        {/* Supporting Evidence Section */}
+        <div className="glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col w-full">
           {/* Header */}
           <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
             <div className="flex items-center gap-3">
@@ -181,9 +181,9 @@ export const KeyEvidenceCards: React.FC<KeyEvidenceCardsProps> = ({
           </div>
         </div>
 
-        {/* Contradicting Evidence Column (Shown only when genuine debunks / refutations exist) */}
+        {/* Contradicting Evidence Section (Shown below supporting, full width) */}
         {hasContradictions && (
-          <div className="glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col lg:col-span-5">
+          <div className="glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col w-full">
             {/* Header */}
             <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
               <div className="flex items-center gap-3">
