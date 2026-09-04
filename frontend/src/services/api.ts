@@ -1,6 +1,9 @@
 import { VerificationResult, DashboardStats } from '../types/verification';
 
-const API_BASE = '/api';
+const envApiBase = (import.meta as any).env?.VITE_API_BASE_URL;
+const API_BASE = envApiBase
+  ? (envApiBase.endsWith('/api') ? envApiBase : `${envApiBase.replace(/\/+$/, '')}/api`)
+  : '/api';
 
 export const api = {
   async verifyClaim(data: { claim: string; date: string; time?: string; language?: string }): Promise<VerificationResult> {
