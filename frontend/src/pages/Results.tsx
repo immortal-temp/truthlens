@@ -108,21 +108,25 @@ export const Results: React.FC = () => {
 
   if (error || !verification) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-5">
-        <div className="w-12 h-12 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center mx-auto">
-          <AlertCircle className="w-6 h-6" />
+      <div className="max-w-xl mx-auto px-4 py-16 sm:py-24 text-center space-y-5">
+        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/5">
+          <AlertCircle className="w-7 h-7" />
         </div>
-        <h2 className="text-xl font-bold text-white">Record Not Found</h2>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          {error || 'This verification document does not exist or has been deleted.'}
+        <h2 className="text-xl sm:text-2xl font-extrabold text-white">Session Timed Out or Quota Limit</h2>
+        <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+          {error?.includes('quota') || error?.includes('429')
+            ? 'An AI model quota was temporarily exhausted. Secondary fallback models will automatically take over on your next attempt.'
+            : 'The active verification session expired or an AI model rate limit occurred. Please try again to verify with remaining model credits.'}
         </p>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-sky-500 text-white font-bold text-xs hover:bg-sky-400 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Verify a New Claim
-        </Link>
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-sky-500/25 transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Try Again / Verify New Claim
+          </Link>
+        </div>
       </div>
     );
   }

@@ -31,7 +31,7 @@ export const FullAIReport: React.FC<FullAIReportProps> = ({
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-base text-slate-100">Structured AI Evidence Analysis</h3>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-950/60 border border-sky-800 text-sky-300">
-                Engine: {providerUsed.toUpperCase()}
+                Engine: {providerUsed.includes('fallback') ? 'CROSS-SOURCE SYNTHESIS' : providerUsed.toUpperCase()}
               </span>
             </div>
             <span className="text-xs text-slate-400">Strictly synthesized from indexed articles — zero invented facts</span>
