@@ -74,8 +74,8 @@ class GroqProvider(LLMProvider):
                     logger.warning("Groq rate limit exceeded (429). Triggering fallback.")
                     return None
                 else:
-                    logger.error(f"Groq API returned status {response.status_code}: {response.text}")
+                    logger.error(f"Groq API returned status {response.status_code}")
                     return None
-        except Exception as e:
-            logger.error(f"Groq API request failed: {e}")
+        except Exception:
+            logger.error("Groq API request failed.")
             return None

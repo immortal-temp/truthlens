@@ -23,7 +23,11 @@ class GeminiProvider(LLMProvider):
             logger.warning("Gemini API key is not configured.")
             return None
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        headers = {
+            "x-goog-api-key": self.api_key,
+            "Content-Type": "application/json"
+        }
         
         payload = {
             "system_instruction": {
@@ -43,7 +47,7 @@ class GeminiProvider(LLMProvider):
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 await db.record_api_call("gemini")
-                response = await client.post(url, json=payload)
+                response = await client.post(url, headers=headers, json=payload)
                 
                 if response.status_code == 200:
                     data = response.json()
@@ -55,8 +59,8 @@ class GeminiProvider(LLMProvider):
                     logger.warning("Gemini quota / rate limit exceeded (429). Triggering fallback.")
                     return None
                 else:
-                    logger.error(f"Gemini API returned status {response.status_code}: {response.text}")
+                    logger.error(f"Gemini API returned status {response.status_code}")
                     return None
-        except Exception as e:
-            logger.error(f"Gemini API request failed: {e}")
+        except Exception:
+            logger.error("Gemini API request failed.")
             return None

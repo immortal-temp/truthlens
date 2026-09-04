@@ -50,7 +50,7 @@ async def search_gnews(query: str, max_results: int = 8) -> List[NormalizedArtic
             elif resp.status_code == 429:
                 logger.warning("GNews rate limit exceeded (429).")
             else:
-                logger.error(f"GNews error {resp.status_code}: {resp.text}")
-    except Exception as e:
-        logger.error(f"GNews request failed: {e}")
+                logger.error(f"GNews error {resp.status_code}")
+    except Exception:
+        logger.error("GNews request failed.")
     return []

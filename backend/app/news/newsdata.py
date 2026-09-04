@@ -42,8 +42,8 @@ async def search_newsdata(query: str, max_results: int = 5) -> List[NormalizedAr
                     if norm:
                         results.append(norm)
                 return results[:max_results]
-    except Exception as e:
-        logger.error(f"NewsData.io request failed: {e}")
+    except Exception:
+        logger.error("NewsData.io request failed.")
     return []
 
 async def search_newsapi(query: str, max_results: int = 5) -> List[NormalizedArticle]:
@@ -72,6 +72,6 @@ async def search_newsapi(query: str, max_results: int = 5) -> List[NormalizedArt
                     if norm:
                         results.append(norm)
                 return results
-    except Exception as e:
-        logger.error(f"NewsAPI.org request failed: {e}")
+    except Exception:
+        logger.error("NewsAPI.org request failed.")
     return []

@@ -56,8 +56,8 @@ class OpenRouterProvider(LLMProvider):
                     logger.warning("OpenRouter rate limit exceeded (429).")
                     return None
                 else:
-                    logger.error(f"OpenRouter API returned status {response.status_code}: {response.text}")
+                    logger.error(f"OpenRouter API returned status {response.status_code}")
                     return None
-        except Exception as e:
-            logger.error(f"OpenRouter API request failed: {e}")
+        except Exception:
+            logger.error("OpenRouter API request failed.")
             return None

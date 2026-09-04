@@ -18,7 +18,7 @@ class Database:
 
     async def connect(self):
         try:
-            logger.info(f"Connecting to MongoDB at {settings.MONGODB_URI} (DB: {settings.MONGODB_DB_NAME})...")
+            logger.info("Connecting to MongoDB database...")
             self.client = motor.motor_asyncio.AsyncIOMotorClient(
                 settings.MONGODB_URI,
                 serverSelectionTimeoutMS=3000
@@ -28,9 +28,9 @@ class Database:
             await self.client.admin.command('ping')
             self.is_connected = True
             logger.info("MongoDB connection successfully established (Persistent Storage enabled).")
-        except Exception as e:
+        except Exception:
             self.is_connected = False
-            logger.warning(f"MongoDB connection failed: {e}. Falling back to in-memory persistent storage.")
+            logger.warning("MongoDB connection not reachable. Using fast in-memory storage fallback.")
 
     async def close(self):
         if self.client:

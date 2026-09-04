@@ -107,6 +107,6 @@ async def search_google_news_rss(query: str, max_results: int = 10) -> List[Norm
             logger.info(f"Retrieved {len(articles)} articles from Google News RSS for query: '{query[:30]}...'")
             return articles
 
-    except Exception as e:
-        logger.error(f"Google News RSS search failed for query '{query}': {e}")
+    except Exception:
+        logger.error("Google News RSS search request failed.")
         return []
