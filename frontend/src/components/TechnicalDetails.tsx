@@ -38,10 +38,10 @@ export const TechnicalDetails: React.FC<TechnicalDetailsProps> = ({ verification
               <span className="font-mono text-slate-300 select-all">{verification.id}</span>
             </div>
             <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800">
-              <span className="text-slate-500 block mb-1">Session Working TTL</span>
+              <span className="text-slate-500 block mb-1">Storage Retention</span>
               <span className="font-mono text-slate-300 flex items-center gap-1">
-                <Clock className="w-3 h-3 text-amber-400" />
-                20 Minutes Auto-Expire
+                <Clock className="w-3 h-3 text-emerald-400" />
+                Persistent (User Managed)
               </span>
             </div>
             <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800">

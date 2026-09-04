@@ -35,13 +35,6 @@ export const Results: React.FC = () => {
   useEffect(() => {
     if (!id) return;
 
-    // When a new verification is loaded, delete any previously stored verification from an earlier session
-    const prevId = sessionStorage.getItem('truthlens_last_active_id');
-    if (prevId && prevId !== id) {
-      api.deleteVerification(prevId).catch(() => {});
-    }
-    sessionStorage.setItem('truthlens_last_active_id', id);
-
     const loadData = async () => {
       try {
         setLoading(true);
