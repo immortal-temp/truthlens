@@ -21,12 +21,15 @@ class GeminiProvider(LLMProvider):
         ]
         self.active_key_index = 0
         self.primary_model = settings.GEMINI_MODEL or "gemini-2.5-flash"
-        self.fallback_models = [
+        models_order = [
             self.primary_model,
-            "gemini-1.5-flash",
+            "gemini-2.5-flash",
             "gemini-2.0-flash",
+            "gemini-2.5-pro",
+            "gemini-1.5-flash",
             "gemini-1.5-pro"
         ]
+        self.fallback_models = list(dict.fromkeys(models_order))
 
     async def is_available(self) -> bool:
         return len(self.keys) > 0

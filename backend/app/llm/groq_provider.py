@@ -32,13 +32,16 @@ class GroqProvider(LLMProvider):
             ] if k and len(k.strip()) > 5
         ]
         self.active_key_index = 0
-        self.primary_model = settings.GROQ_MODEL or "openai/gpt-oss-120b"
-        self.fallback_models = [
+        self.primary_model = settings.GROQ_MODEL or "llama-3.3-70b-versatile"
+        models_order = [
             self.primary_model,
+            "openai/gpt-oss-120b",
             "openai/gpt-oss-20b",
             "qwen/qwen3.8-27b",
             "groq/compound-mini"
         ]
+        # Preserve order without duplicates
+        self.fallback_models = list(dict.fromkeys(models_order))
 
     async def is_available(self) -> bool:
         return len(self.keys) > 0

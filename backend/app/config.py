@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GROQ_API_KEY_2: str = ""
     GROQ_API_KEY_3: str = ""
-    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_API_KEY_2: str = ""
