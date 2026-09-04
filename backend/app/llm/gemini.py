@@ -20,12 +20,12 @@ class GeminiProvider(LLMProvider):
             ] if k and len(k.strip()) > 5
         ]
         self.active_key_index = 0
-        self.primary_model = settings.GEMINI_MODEL or "gemini-2.5-flash"
+        self.primary_model = settings.GEMINI_MODEL or "gemini-3.5-flash"
         models_order = [
             self.primary_model,
+            "gemini-3.5-flash",
             "gemini-2.5-flash",
             "gemini-2.0-flash",
-            "gemini-2.5-pro",
             "gemini-1.5-flash",
             "gemini-1.5-pro"
         ]
