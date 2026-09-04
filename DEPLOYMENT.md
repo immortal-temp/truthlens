@@ -1,125 +1,99 @@
-# TruthLens Cloud Deployment Guide (Render + Netlify)
+# TruthLens Cloud Deployment Guide
 
-This guide walks you through deploying **TruthLens** with the **FastAPI Backend on Render** and the **React + Vite Frontend on Netlify**.
+You can deploy **both the Backend and Frontend on Render** (all-in-one dashboard) or deploy the frontend on **Netlify**. Both setups are 100% free.
 
 ---
 
-## 🏗 Architecture Overview
+## 🎯 Option 1: Deploy Both Backend & Frontend on Render (Recommended)
+
+Render provides **Web Services** (for Python FastAPI) and **Static Sites** (for React/Vite). You can host both under the same Render account for free.
 
 ```mermaid
 graph LR
-    User[User Browser / Mobile] -->|HTTPS| Netlify[Frontend: Netlify SPA]
-    Netlify -->|REST API Calls| Render[Backend: Render Web Service]
-    Render -->|LLM Queries| Groq[Groq / Gemini LLMs]
-    Render -->|News Retrieval| RSS[Google News RSS / News APIs]
-    Render -->|Temporary Cache| Mongo[MongoDB Atlas / In-Memory]
+    User[User Browser] -->|HTTPS| RenderFrontend[Render Static Site: Frontend]
+    RenderFrontend -->|REST API Calls| RenderBackend[Render Web Service: FastAPI Backend]
+    RenderBackend -->|AI Inferences| Groq[Groq / Gemini APIs]
+    RenderBackend -->|News Fetch| RSS[Google News RSS]
 ```
 
----
-
-## 🚀 Part 1: Deploy Backend on Render
-
-### Step 1: Create a New Web Service on Render
-1. Go to [Render Dashboard](https://dashboard.render.com/) and sign in with your GitHub account (`immortal-temp`).
-2. Click **New +** $\rightarrow$ **Web Service**.
-3. Select **Build and deploy from a Git repository** and connect your repo: `immortal-temp/truthlens`.
-
-### Step 2: Configure Service Settings
-Configure the service with the following settings:
-
-| Field | Setting Value |
-| :--- | :--- |
-| **Name** | `truthlens-api` *(or your preferred name)* |
-| **Region** | Choose the closest region (e.g., `Singapore`, `Frankfurt`, `Oregon`) |
-| **Branch** | `main` |
-| **Root Directory** | `backend` |
-| **Runtime** | `Python 3` |
-| **Build Command** | `pip install -r requirements.txt` |
-| **Start Command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| **Instance Type** | `Free` |
+### Step 1: Deploy Backend on Render (Web Service)
+1. Go to [Render Dashboard](https://dashboard.render.com/) and click **New +** $\rightarrow$ **Web Service**.
+2. Connect your repo: `immortal-temp/truthlens`.
+3. Configure settings:
+   - **Name**: `truthlens-api`
+   - **Root Directory**: `backend`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Instance Type**: `Free`
+4. Add **Environment Variables**:
+   - `GROQ_API_KEY` = `gsk_...`
+   - `GROQ_MODEL` = `openai/gpt-oss-120b`
+   - `GEMINI_API_KEY` = `AIzaSy...`
+   - `GEMINI_MODEL` = `gemini-3.6-flash`
+   - `CORS_ORIGINS` = `*`
+   - `MONGODB_URI` = *(Optional: MongoDB Atlas URI or omit for in-memory)*
+   - `DEMO_MODE` = `false`
+5. Click **Create Web Service** and copy your live backend URL (e.g. `https://truthlens-api.onrender.com`).
 
 ---
 
-### Step 3: Add Backend Environment Variables
-Under the **Environment Variables** section on Render, add the following keys:
-
-| Environment Variable | Recommended Value / Description |
-| :--- | :--- |
-| `GROQ_API_KEY` | `gsk_...` *(Your Groq API key for ultra-fast structured synthesis)* |
-| `GROQ_MODEL` | `openai/gpt-oss-120b` |
-| `GEMINI_API_KEY` | `AIzaSy...` *(Your Google Gemini API key)* |
-| `GEMINI_MODEL` | `gemini-3.6-flash` |
-| `CORS_ORIGINS` | `*` *(Or comma-separated domains like `https://your-site.netlify.app`)* |
-| `MONGODB_URI` | `mongodb+srv://...` *(MongoDB Atlas connection string, or omit for in-memory mode)* |
-| `MONGODB_DB_NAME` | `truthlens` |
-| `MONGODB_TTL_SECONDS` | `1200` |
-| `DEMO_MODE` | `false` |
-
-> [!TIP]
-> **Free Tier Cold Starts**: Render puts free web services to sleep after 15 minutes of inactivity. The first request after sleep may take ~30 seconds to spin up.
-
-### Step 4: Deploy & Copy Backend URL
-1. Click **Create Web Service**.
-2. Wait for the build and deployment logs to show `Application startup complete`.
-3. Copy your live backend URL (e.g., `https://truthlens-api.onrender.com`).
-4. Test in browser by visiting: `https://truthlens-api.onrender.com/api/health`.
+### Step 2: Deploy Frontend on Render (Static Site)
+1. In your Render dashboard, click **New +** $\rightarrow$ **Static Site**.
+2. Connect the same repo: `immortal-temp/truthlens`.
+3. Configure settings:
+   - **Name**: `truthlens` *(or `truthlens-web`)*
+   - **Root Directory**: `frontend`
+   - **Build Command**: `npm run build`
+   - **Publish Directory**: `dist`
+4. Add **Environment Variables**:
+   - `VITE_API_BASE_URL` = `https://truthlens-api.onrender.com` *(Your Render backend URL from Step 1)*
+5. Configure **Redirects/Rewrites** (for React Router support):
+   - Go to **Redirects/Rewrites** tab on your Render static site settings.
+   - Click **Add Rule**:
+     - **Source**: `/*`
+     - **Destination**: `/index.html`
+     - **Action**: `Rewrite`
+6. Click **Create Static Site**.
+7. Render will build and launch your frontend with free SSL and global CDN!
 
 ---
 
-## 🌐 Part 2: Deploy Frontend on Netlify
+## 🌐 Option 2: Deploy Backend on Render + Frontend on Netlify
 
-### Step 1: Import Project to Netlify
-1. Go to [Netlify Dashboard](https://app.netlify.com/) and sign in.
-2. Click **Add new site** $\rightarrow$ **Import an existing project**.
-3. Select **GitHub** and authorize access to `immortal-temp/truthlens`.
+If you prefer using **Netlify** for the frontend:
 
-### Step 2: Configure Build & Directory Settings
-Under **Site configuration**, set:
+### Step 1: Deploy Backend on Render
+*(Follow Step 1 from Option 1 above)*
 
-| Field | Setting Value |
-| :--- | :--- |
-| **Base directory** | `frontend` |
-| **Build command** | `npm run build` |
-| **Publish directory** | `frontend/dist` |
-| **Branch to deploy** | `main` |
-
----
-
-### Step 3: Add Frontend Environment Variables
-Under **Site configuration** $\rightarrow$ **Environment variables**, click **Add variable** and add:
-
-| Key | Value | Note |
-| :--- | :--- | :--- |
-| `VITE_API_BASE_URL` | `https://truthlens-api.onrender.com` | **Replace with your actual Render backend URL** |
-
-> [!IMPORTANT]
-> Do NOT include a trailing slash `/` at the end of `VITE_API_BASE_URL`. For example, use `https://truthlens-api.onrender.com`, not `https://truthlens-api.onrender.com/`.
+### Step 2: Deploy Frontend on Netlify
+1. Go to [Netlify](https://app.netlify.com/) $\rightarrow$ **Add new site** $\rightarrow$ **Import an existing project**.
+2. Select `immortal-temp/truthlens`.
+3. Configure settings:
+   - **Base directory**: `frontend`
+   - **Build command**: `npm run build`
+   - **Publish directory**: `frontend/dist`
+4. Add Environment Variable:
+   - `VITE_API_BASE_URL` = `https://truthlens-api.onrender.com` *(Your Render backend URL without trailing slash)*
+5. Click **Deploy Site**.
 
 ---
 
-### Step 4: Deploy Frontend
-1. Click **Deploy Site**.
-2. Netlify will run `npm run build` and publish your production bundle.
-3. Once deployed, Netlify provides a live URL (e.g., `https://truthlens.netlify.app`).
-
----
-
-## 🔍 Part 3: Verification & Health Checklist
+## 🔍 Verification & Health Checklist
 
 1. **Verify Backend Health**:
-   - Open `https://<your-render-app>.onrender.com/api/health` in your browser.
+   - Open `https://<your-backend>.onrender.com/api/health` in your browser.
    - Expect: `{"status": "healthy", ...}`.
 
-2. **Verify Frontend Connectivity**:
-   - Open your Netlify URL (e.g., `https://truthlens.netlify.app`).
+2. **Verify Frontend**:
+   - Open your Render static site or Netlify URL.
    - Run a test verification:
      > *"ISRO has successfully sent the Earth observation satellite, EOS-05, into space."*
-   - Verify the 0–100 Evidence Score, supporting articles, date analysis, and structured report render smoothly.
+   - Verify the score gauge, supporting articles, date analysis, and structured report load accurately.
 
-3. **Verify Routing & Refresh**:
-   - Navigate to `/history` or a specific results page (`/results/<id>`).
-   - Refresh the browser page (`F5`).
-   - The page should reload directly without a 404 (handled by `public/_redirects`).
+3. **Verify Route Refresh**:
+   - Navigate to `/history` and refresh (`F5`).
+   - The page should reload directly without a 404.
 
 ---
 
@@ -127,7 +101,8 @@ Under **Site configuration** $\rightarrow$ **Environment variables**, click **Ad
 
 | Issue | Cause | Solution |
 | :--- | :--- | :--- |
-| **CORS error in browser console** | Backend didn't allow Netlify domain | Set `CORS_ORIGINS=*` in Render environment variables. |
-| **404 on page refresh on Netlify** | SPA router missing redirect rule | Ensure `frontend/public/_redirects` contains `/* /index.html 200`. |
-| **Frontend calls `http://localhost:8000` instead of Render** | `VITE_API_BASE_URL` not configured | Add `VITE_API_BASE_URL=https://<your-render-url>` in Netlify settings and trigger a redeploy. |
-| **Groq / Gemini quota error** | Invalid or missing API key | Check your Render environment variables and ensure `GROQ_API_KEY` / `GEMINI_API_KEY` are valid. |
+| **CORS error in browser console** | Backend blocked frontend origin | Set `CORS_ORIGINS=*` in Render backend environment variables. |
+| **404 on page refresh on Render Static Site** | SPA rewrite rule missing | In Render Static Site $\rightarrow$ Redirects/Rewrites, add `/*` $\rightarrow$ `/index.html` (Rewrite). |
+| **404 on page refresh on Netlify** | SPA redirect rule missing | Handled automatically by `frontend/public/_redirects`. |
+| **Frontend calls `localhost:8000`** | `VITE_API_BASE_URL` not set | Set `VITE_API_BASE_URL=https://<your-backend>.onrender.com` in frontend environment settings and redeploy. |
+| **Free Tier Cold Start (~30s delay)** | Render free tier sleep after 15m | Normal behavior for free web services. Once woken up, requests respond in $<1$s. |
