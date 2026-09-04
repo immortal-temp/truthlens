@@ -59,13 +59,19 @@ export const KeyEvidenceCards: React.FC<KeyEvidenceCardsProps> = ({
     return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
   };
 
+  const hasContradictions = contradicting.length > 0;
+  const hasRefutationText = contradictingSummary && 
+    !contradictingSummary.toLowerCase().includes('none found') && 
+    !contradictingSummary.toLowerCase().includes('no explicit contradiction') &&
+    contradictingSummary.trim().length > 5;
+
   return (
     <div className="space-y-6">
       {/* Evidence Columns Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className={`grid grid-cols-1 ${hasContradictions ? 'lg:grid-cols-12' : ''} gap-6 items-start`}>
         
-        {/* Supporting Evidence Column (Wide & Prominent: 7 or 8 columns on large screens) */}
-        <div className={`glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col ${contradicting.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'}`}>
+        {/* Supporting Evidence Column */}
+        <div className={`glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col ${hasContradictions ? 'lg:col-span-7' : 'w-full'}`}>
           {/* Header */}
           <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
             <div className="flex items-center gap-3">
@@ -82,6 +88,13 @@ export const KeyEvidenceCards: React.FC<KeyEvidenceCardsProps> = ({
                 <p className="text-xs text-slate-400">Independent media reporting confirming the claim details</p>
               </div>
             </div>
+
+            {!hasContradictions && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Zero Contradictions Flagged
+              </span>
+            )}
           </div>
 
           {/* AI Summary Note */}
@@ -94,7 +107,7 @@ export const KeyEvidenceCards: React.FC<KeyEvidenceCardsProps> = ({
             </div>
           )}
 
-          {/* Supporting Articles List (Shows 7-8 items) */}
+          {/* Supporting Articles List */}
           <div className="space-y-3 flex-1">
             {supporting.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-500 italic bg-slate-900/30 rounded-2xl border border-slate-800">
@@ -168,50 +181,40 @@ export const KeyEvidenceCards: React.FC<KeyEvidenceCardsProps> = ({
           </div>
         </div>
 
-        {/* Contradicting Evidence Column (3-4 items or Clear Reassuring Note if zero) */}
-        <div className={`glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col ${contradicting.length > 0 ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
-          {/* Header */}
-          <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-2xl border ${contradicting.length > 0 ? 'bg-rose-500/15 border-rose-500/30 text-rose-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base sm:text-lg text-slate-100 flex items-center gap-2">
-                  Contradicting / Debunks
-                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${contradicting.length > 0 ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
-                    {contradicting.length} flagged
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-400">Conflicting reports, fact-checks, or refutations</p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Summary Note */}
-          {contradictingSummary && (
-            <div className="text-xs text-slate-300 bg-rose-950/30 border border-rose-800/40 rounded-2xl p-4 mb-4 leading-relaxed">
-              <span className="font-bold text-rose-400 block mb-1 text-[11px] uppercase tracking-wider">
-                Refutation Overview:
-              </span>
-              {cleanSnippet(contradictingSummary)}
-            </div>
-          )}
-
-          {/* Contradicting List or Zero-Conflict Guarantee */}
-          <div className="space-y-3 flex-1">
-            {contradicting.length === 0 ? (
-              <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800/80 text-center space-y-2">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto">
-                  <ShieldCheck className="w-5 h-5" />
+        {/* Contradicting Evidence Column (Shown only when genuine debunks / refutations exist) */}
+        {hasContradictions && (
+          <div className="glass-panel rounded-3xl p-6 sm:p-7 border-slate-800 border flex flex-col lg:col-span-5">
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl border bg-rose-500/15 border-rose-500/30 text-rose-400 shadow-md shadow-rose-500/10">
+                  <AlertTriangle className="w-5 h-5" />
                 </div>
-                <h4 className="text-xs font-bold text-slate-200">Zero Contradicting Reports Detected</h4>
-                <p className="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">
-                  No independent fact-checkers or mainstream journalistic publishers reported contradictory facts for this event.
-                </p>
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg text-slate-100 flex items-center gap-2">
+                    Contradicting / Debunks
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full border bg-rose-500/15 text-rose-300 border-rose-500/30">
+                      {contradicting.length} flagged
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">Conflicting reports, fact-checks, or refutations</p>
+                </div>
               </div>
-            ) : (
-              contradicting.slice(0, 4).map((art, idx) => {
+            </div>
+
+            {/* AI Summary Note */}
+            {hasRefutationText && (
+              <div className="text-xs text-slate-300 bg-rose-950/30 border border-rose-800/40 rounded-2xl p-4 mb-4 leading-relaxed">
+                <span className="font-bold text-rose-400 block mb-1 text-[11px] uppercase tracking-wider">
+                  Refutation Overview:
+                </span>
+                {cleanSnippet(contradictingSummary)}
+              </div>
+            )}
+
+            {/* Contradicting List */}
+            <div className="space-y-3 flex-1">
+              {contradicting.slice(0, 4).map((art, idx) => {
                 const snippet = cleanSnippet(art.description || art.content);
                 return (
                   <div
@@ -260,10 +263,10 @@ export const KeyEvidenceCards: React.FC<KeyEvidenceCardsProps> = ({
                     </div>
                   </div>
                 );
-              })
-            )}
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
 

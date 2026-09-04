@@ -6,11 +6,21 @@ from app.models.claim import ExtractedEntities
 
 logger = logging.getLogger(__name__)
 
-CONTRADICTION_PATTERNS = [
-    r'\bfact[-\s]?check\b', r'\bhoax\b', r'\bfake\b', r'\bfalse\b', r'\bdebunk(?:ed)?\b',
-    r'\bno evidence\b', r'\bnever happened\b', r'\bdenies\b', r'\brefutes\b',
-    r'\bmisleading\b', r'\bclarification\b', r'\bunfounded\b', r'\bfabricated\b',
-    r'\bdid not\b', r'\bnot true\b', r'\bbaseless\b'
+FACT_CHECK_SOURCES = {
+    "alt news", "boom live", "pib fact check", "factly", "vishvas news",
+    "the quint", "snopes", "politifact", "factcheck.org", "reuters fact check",
+    "afp fact check", "bbc reality check", "indiatoday fact check", "newschecker"
+}
+
+FACT_CHECK_HEADLINE_PATTERNS = [
+    r'\bfact[-\s]?check\b',
+    r'\bdebunk(?:ed)?\b',
+    r'\bhoax\b',
+    r'\bfake news\b',
+    r'\bfalse claim\b',
+    r'\bmisleading claim\b',
+    r'\bclaim debunked\b',
+    r'\bviral claim is false\b'
 ]
 
 def classify_article_evidence(
@@ -18,28 +28,26 @@ def classify_article_evidence(
     claim: str,
     entities: ExtractedEntities
 ) -> str:
-    text = f"{article.title} {article.description or ''} {article.content or ''}".lower()
-    claim_lower = claim.lower()
-    
+    title_lower = (article.title or "").lower()
+    text_lower = f"{title_lower} {(article.description or '').lower()} {(article.content or '').lower()}"
+    src_lower = (article.source_name or "").lower()
     sim = article.semantic_similarity or 0.0
-    
+
     # If semantic similarity is very low, it's unrelated
     if sim < 0.12:
         return "Unrelated"
 
-    # Check for direct contradiction / debunking markers
-    is_contradiction = any(re.search(pat, text) for pat in CONTRADICTION_PATTERNS)
-    
-    if is_contradiction:
-        # Check if the debunking is specifically targeting the subject of the claim
-        keywords = [k.lower() for k in entities.important_keywords if len(k) > 3]
-        if any(k in text for k in keywords) or sim > 0.25:
-            return "Contradicting"
+    # Check if article is an authentic fact-check / debunking refutation
+    is_from_fact_checker = any(fc in src_lower for fc in FACT_CHECK_SOURCES)
+    has_fact_check_title = any(re.search(pat, title_lower) for pat in FACT_CHECK_HEADLINE_PATTERNS)
 
-    # Supporting vs Partially Supporting
+    if (is_from_fact_checker or has_fact_check_title) and sim >= 0.22:
+        return "Contradicting"
+
+    # Supporting vs Partially Supporting based on semantic similarity and relevance
     if sim >= 0.35:
         return "Supporting"
-    elif sim >= 0.20:
+    elif sim >= 0.18:
         return "Partially Supporting"
     elif sim >= 0.12:
         return "Neutral"
