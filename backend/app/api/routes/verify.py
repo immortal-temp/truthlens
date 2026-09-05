@@ -59,6 +59,27 @@ async def verify_url(url: str = Form(...), date: str = Form(...), time: Optional
         logger.error(f"URL verification failed: {e}")
         raise HTTPException(status_code=500, detail=f"URL verification failed: {str(e)}")
 
+from app.services.image_extractor import image_ocr_extractor
+
+@router.post("/extract/image")
+async def extract_image_text(file: UploadFile = File(...)):
+    """
+    Extracts headline, factual claim statement, transcribed text, and detected date from image.
+    Allows user to preview or edit extracted text before running verification.
+    """
+    try:
+        content = await file.read()
+        if not content or len(content) < 50:
+            raise HTTPException(status_code=400, detail="The uploaded image file is empty or corrupted.")
+        
+        result = await image_ocr_extractor.extract_claim_from_image(content)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Image OCR extraction failed: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.post("/verify/image")
 async def verify_image(
     file: UploadFile = File(...),
@@ -66,18 +87,42 @@ async def verify_image(
     time: Optional[str] = Form(None)
 ):
     """
-    OCR headline/claim from image and runs verification.
-    Displays explicit disclaimer: 'OCR text may contain extraction errors.'
+    Performs high-precision Vision OCR on uploaded news screenshot/image,
+    extracts the core factual claim statement, and runs the verification pipeline.
     """
-    # For OCR without heavy system tesseract dependencies, we do a safe fallback or OCR extraction
-    extracted_text = f"News Headline extracted from image {file.filename}"
-    result = await run_verification_pipeline(
-        claim=extracted_text,
-        date=date,
-        time=time,
-        language="en"
-    )
-    return result
+    try:
+        content = await file.read()
+        if not content or len(content) < 50:
+            raise HTTPException(status_code=400, detail="The uploaded image file is empty or corrupted.")
+        
+        ocr_data = await image_ocr_extractor.extract_claim_from_image(content)
+        extracted_claim = ocr_data.get("extracted_claim") or ocr_data.get("headline")
+        if not extracted_claim or len(extracted_claim.strip()) < 5:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not detect a clear news claim or headline in the uploaded image. Please ensure the text is legible or paste the claim directly."
+            )
+        
+        result = await run_verification_pipeline(
+            claim=extracted_claim.strip(),
+            date=date,
+            time=time,
+            language="en"
+        )
+        if isinstance(result, dict):
+            result["ocr_metadata"] = {
+                "headline": ocr_data.get("headline"),
+                "full_text": ocr_data.get("full_text"),
+                "publisher": ocr_data.get("publisher"),
+                "engine": ocr_data.get("engine"),
+                "confidence": ocr_data.get("confidence")
+            }
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Image verification failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Image OCR verification failed: {str(e)}")
 
 @router.get("/verification/{doc_id}")
 async def get_verification_by_id(doc_id: str):

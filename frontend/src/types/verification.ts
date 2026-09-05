@@ -101,6 +101,13 @@ export interface VerificationResult {
   date_analysis: DateAnalysisResult;
   source_analysis: SourceAnalysisSummary;
   ai_report?: AIReportResponse;
+  ocr_metadata?: {
+    headline?: string;
+    full_text?: string;
+    publisher?: string;
+    engine?: string;
+    confidence?: number;
+  };
   llm_provider_used: string;
   is_demo_mode: boolean;
   created_at: string;

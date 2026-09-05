@@ -43,6 +43,26 @@ export const api = {
     return res.json();
   },
 
+  async extractImage(formData: FormData): Promise<{
+    extracted_claim: string;
+    headline: string;
+    full_text: string;
+    detected_date?: string | null;
+    publisher?: string | null;
+    confidence?: number;
+    engine?: string;
+  }> {
+    const res = await fetch(`${API_BASE}/extract/image`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Image text extraction failed.' }));
+      throw new Error(err.detail || 'Failed to extract text from image.');
+    }
+    return res.json();
+  },
+
   async getVerification(id: string): Promise<VerificationResult> {
     const res = await fetch(`${API_BASE}/verification/${id}`);
     if (!res.ok) {
