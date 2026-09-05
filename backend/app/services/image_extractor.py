@@ -81,13 +81,53 @@ class ImageOCRExtractor:
         # 3. Fallback error if completely unreadable
         raise ValueError("No readable news headline or factual claim could be extracted from the uploaded image. Please ensure the image contains legible text, or paste the text directly.")
 
+    def _clean_and_parse_json(self, raw_text: str) -> Optional[Dict[str, Any]]:
+        """Cleans markdown wrappers and safely parses JSON from model responses."""
+        if not raw_text or not raw_text.strip():
+            return None
+
+        text = raw_text.strip()
+        # Remove markdown code block fences if present
+        if "```json" in text:
+            text = text.split("```json", 1)[1].split("```", 1)[0].strip()
+        elif "```" in text:
+            text = text.split("```", 1)[1].split("```", 1)[0].strip()
+
+        try:
+            return json.loads(text)
+        except Exception:
+            pass
+
+        # Try to find JSON object substring {...}
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            try:
+                return json.loads(text[start:end+1])
+            except Exception:
+                pass
+
+        # If pure text was returned without JSON, extract first line as headline
+        lines = [l.strip() for l in text.split("\n") if l.strip()]
+        if lines:
+            headline = lines[0]
+            return {
+                "extracted_claim": headline,
+                "headline": headline,
+                "full_text": text,
+                "detected_date": None,
+                "publisher": None,
+                "confidence": 0.85
+            }
+        return None
+
     async def _extract_with_gemini_vision(self, base64_image: str, mime_type: str) -> Optional[Dict[str, Any]]:
         if not self.gemini_keys:
             logger.warning("No Gemini API keys configured for Vision OCR.")
             return None
 
         prompt = (
-            "You are a News OCR and Fact-Checking Extraction Engine. Analyze this image (which may be a news headline, "
+            "You are an expert News OCR and Fact-Checking Extraction Engine. Analyze this image (news headline, "
             "newspaper screenshot, social media post, breaking news banner, TV chyron, or document).\n\n"
             "Task:\n"
             "1. Transcribe all legible text from the image accurately into `full_text`.\n"
@@ -126,9 +166,9 @@ class ImageOCRExtractor:
             }
         }
 
-        while self.active_key_index < len(self.gemini_keys):
-            current_key = self.gemini_keys[self.active_key_index]
-            key_label = f"key #{self.active_key_index + 1}"
+        # Iterate across all configured keys to guarantee full resilience
+        for key_idx, current_key in enumerate(self.gemini_keys):
+            key_label = f"key #{key_idx + 1}"
             headers = {
                 "x-goog-api-key": current_key,
                 "Content-Type": "application/json"
@@ -146,39 +186,39 @@ class ImageOCRExtractor:
                             candidates = data.get("candidates", [])
                             if candidates:
                                 text = candidates[0]["content"]["parts"][0]["text"]
-                                parsed = json.loads(text)
-                                claim = parsed.get("extracted_claim") or parsed.get("headline") or parsed.get("full_text")
-                                if claim and len(claim.strip()) > 5:
-                                    logger.info(f"Gemini Vision OCR succeeded using {model_name} on {key_label}.")
-                                    return {
-                                        "extracted_claim": claim.strip(),
-                                        "headline": parsed.get("headline", "").strip(),
-                                        "full_text": parsed.get("full_text", "").strip(),
-                                        "detected_date": parsed.get("detected_date"),
-                                        "publisher": parsed.get("publisher"),
-                                        "confidence": float(parsed.get("confidence", 0.95)),
-                                        "engine": f"Gemini Vision ({model_name})"
-                                    }
+                                parsed = self._clean_and_parse_json(text)
+                                if parsed:
+                                    claim = (
+                                        parsed.get("extracted_claim") or 
+                                        parsed.get("headline") or 
+                                        parsed.get("text") or 
+                                        parsed.get("full_text")
+                                    )
+                                    if claim and len(claim.strip()) > 5:
+                                        logger.info(f"Gemini Vision OCR succeeded using {model_name} on {key_label}.")
+                                        return {
+                                            "extracted_claim": claim.strip(),
+                                            "headline": (parsed.get("headline") or claim).strip(),
+                                            "full_text": (parsed.get("full_text") or parsed.get("text") or claim).strip(),
+                                            "detected_date": parsed.get("detected_date") or parsed.get("updated_on"),
+                                            "publisher": parsed.get("publisher") or parsed.get("author"),
+                                            "confidence": float(parsed.get("confidence", 0.95)),
+                                            "engine": f"Gemini Vision ({model_name})"
+                                        }
 
                         elif resp.status_code in (429, 403) or (resp.status_code == 400 and "quota" in resp.text.lower()):
-                            logger.warning(f"Gemini Vision {key_label} quota exhausted (status {resp.status_code}).")
+                            logger.warning(f"Gemini Vision {key_label} quota exhausted (status {resp.status_code}). Trying next key...")
                             break
 
                         elif resp.status_code in (404, 400) and ("not found" in resp.text.lower() or "no longer available" in resp.text.lower()):
-                            logger.info(f"Gemini model {model_name} unavailable on {key_label}, trying next model...")
                             continue
 
                         else:
                             logger.error(f"Gemini Vision API status {resp.status_code}: {resp.text[:120]}")
-                            break
 
                 except Exception as e:
-                    logger.error(f"Gemini Vision OCR error on {key_label} ({model_name}): {e}")
+                    logger.error(f"Gemini Vision OCR request error on {key_label} ({model_name}): {e}")
                     continue
-
-            self.active_key_index += 1
-            if self.active_key_index < len(self.gemini_keys):
-                logger.info(f"Flipping to Gemini key #{self.active_key_index + 1} for Vision OCR.")
 
         return None
 
@@ -195,12 +235,11 @@ class ImageOCRExtractor:
             if not results:
                 return None
 
-            lines = [r[1].strip() for r in results if r[1] and len(r[1].strip()) > 2]
+            lines = [str(r[1]).strip() for r in results if r[1] and len(str(r[1]).strip()) > 2]
             if not lines:
                 return None
 
             full_text = " ".join(lines)
-            # Find the longest line or first significant line as headline
             headline = max(lines, key=len) if lines else full_text[:200]
             
             return {
