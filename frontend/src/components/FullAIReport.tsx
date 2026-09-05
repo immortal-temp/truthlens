@@ -25,25 +25,10 @@ export const FullAIReport: React.FC<FullAIReportProps> = ({
       >
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400">
-            <Bot className="w-5 h-5" />
+            <FileText className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-base text-slate-100">Structured AI Evidence Analysis</h3>
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                providerUsed === 'all_quotas_exhausted' 
-                  ? 'bg-amber-950/60 border-amber-800 text-amber-300' 
-                  : 'bg-sky-950/60 border-sky-800 text-sky-300'
-              }`}>
-                Engine: {
-                  providerUsed === 'all_quotas_exhausted' 
-                    ? 'QUOTA EXHAUSTED (DIRECT SYNTHESIS)' 
-                    : providerUsed.includes('fallback') 
-                      ? 'CROSS-SOURCE SYNTHESIS' 
-                      : providerUsed.toUpperCase()
-                }
-              </span>
-            </div>
+            <h3 className="font-bold text-base text-slate-100">Structured AI Evidence Analysis</h3>
             <span className="text-xs text-slate-400">Strictly synthesized from indexed articles — zero invented facts</span>
           </div>
         </div>

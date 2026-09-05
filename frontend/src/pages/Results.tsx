@@ -6,7 +6,6 @@ import { VerdictBadge } from '../components/VerdictBadge';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { KeyEvidenceCards } from '../components/KeyEvidenceCards';
 import { SourceList } from '../components/SourceList';
-import { DateAnalysisPanel } from '../components/DateAnalysisPanel';
 import { TimelineView } from '../components/TimelineView';
 import { FullAIReport } from '../components/FullAIReport';
 import { 
@@ -225,10 +224,7 @@ export const Results: React.FC = () => {
         contradictingSummary={verification.ai_report?.contradicting_evidence_summary}
       />
 
-      {/* Progressive Disclosure Section 5: Date Analysis & Old-News Detection Panel */}
-      <DateAnalysisPanel dateAnalysis={verification.date_analysis} />
-
-      {/* Progressive Disclosure Section 6: Full Discovered Source List */}
+      {/* Progressive Disclosure Section 5: Full Discovered Source List */}
       <SourceList articles={verification.articles} />
 
       {/* Progressive Disclosure Section 7: Chronological Timeline */}
