@@ -18,9 +18,8 @@ export const App: React.FC = () => {
           </Routes>
         </main>
         <footer className="border-t border-slate-800/60 py-6 text-center text-xs text-slate-500">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="max-w-7xl mx-auto px-4 flex items-center justify-center text-center">
             <span>TruthLens • AI-Powered News Verification & Misinformation Detection</span>
-            <span>Evidence-Based Fact Checking</span>
           </div>
         </footer>
       </div>

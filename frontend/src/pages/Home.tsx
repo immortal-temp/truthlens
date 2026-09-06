@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { CustomDatePicker } from '../components/CustomDatePicker';
+import { HowToUseModal } from '../components/HowToUseModal';
 import { 
   Sparkles, 
   Link as LinkIcon, 
@@ -14,12 +15,14 @@ import {
   Scan,
   X,
   CheckCircle2,
-  UploadCloud
+  UploadCloud,
+  HelpCircle
 } from 'lucide-react';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const [mode, setMode] = useState<'text' | 'url' | 'image'>('text');
+  const [showHowToUse, setShowHowToUse] = useState<boolean>(false);
   
   const [claim, setClaim] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -149,6 +152,18 @@ export const Home: React.FC = () => {
         <p className="text-xs sm:text-sm md:text-base lg:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed px-2">
           TruthLens retrieves real articles from multiple independent sources, checks dates, classifies source credibility, calculates an explainable 0–100 Evidence Score, and provides grounded reports.
         </p>
+
+        {/* How to use button trigger */}
+        <div className="flex items-center justify-center pt-1">
+          <button
+            type="button"
+            onClick={() => setShowHowToUse(true)}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-sky-500/50 text-slate-300 hover:text-sky-300 text-xs font-semibold shadow-sm shadow-sky-500/5 hover:shadow-sky-500/15 transition-all cursor-pointer group"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-sky-400 group-hover:scale-110 transition-transform" />
+            <span>How to use TruthLens</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Verification Card */}
@@ -374,6 +389,12 @@ export const Home: React.FC = () => {
           </button>
         </form>
       </div>
+
+      {/* Interactive How to Use Modal */}
+      <HowToUseModal 
+        isOpen={showHowToUse} 
+        onClose={() => setShowHowToUse(false)} 
+      />
     </div>
   );
 };
