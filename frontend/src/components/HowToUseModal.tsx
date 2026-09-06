@@ -143,50 +143,104 @@ export const HowToUseModal: React.FC<HowToUseModalProps> = ({ isOpen, onClose })
             </p>
           </div>
 
-          {/* Section 4: What All TruthLens Includes */}
-          <div className="space-y-3">
+          {/* Section 4: What All TruthLens Gives & Includes */}
+          <div className="space-y-3.5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              2. What's Included in the Verification Report
+              2. What's Included in Your Verification Report
             </h3>
 
-            <div className="space-y-2.5">
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
-                <Scale className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">Verdict & Evidence Score (0–100)</h4>
-                  <p className="text-slate-400 text-[11px] mt-0.5">
-                    Clear badges (<em>Likely True</em>, <em>Partially True</em>, <em>Misleading</em>, <em>Likely False</em>, <em>Unverified</em>) computed across source agreement, date consistency, semantic similarity, publisher quality, and contradiction penalties.
+            <div className="space-y-3">
+              {/* Verdict & Score */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start gap-3.5">
+                <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 shrink-0 mt-0.5">
+                  <Scale className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-100 text-xs sm:text-sm">Verdict & 0–100 Evidence Score</h4>
+                  <p className="text-slate-400 text-[11px] sm:text-xs leading-relaxed">
+                    Clear verdict classification (<em>Likely True</em>, <em>Partially True</em>, <em>Misleading</em>, <em>Likely False</em>, <em>Unverified</em>) backed by a transparent 6-factor score gauge measuring source agreement, date consistency, semantic similarity, publisher quality, and contradiction penalties.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">Supporting Corroboration & Debunks</h4>
-                  <p className="text-slate-400 text-[11px] mt-0.5">
-                    Full-width panels showcasing independent media articles confirming details, along with any fact-checks or refutations flagged.
+              {/* Supporting Corroboration */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-emerald-500/20 flex items-start gap-3.5">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0 mt-0.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-100 text-xs sm:text-sm flex items-center gap-2">
+                    <span>Supporting Corroboration</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Direct Links</span>
+                  </h4>
+                  <p className="text-slate-400 text-[11px] sm:text-xs leading-relaxed">
+                    Shows independent media reporting confirming the claim details with <b>direct links to supporting news reports</b> from different publishers so you can click and verify the news on site.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
-                <BookOpen className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">Discovered Sources & Direct Links</h4>
-                  <p className="text-slate-400 text-[11px] mt-0.5">
-                    Browse all retrieved news articles with publisher credibility tiers (High/Medium) and direct links to original sources.
+              {/* Contradicting / Debunks */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-rose-500/20 flex items-start gap-3.5">
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 shrink-0 mt-0.5">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-100 text-xs sm:text-sm">Contradicting / Debunks</h4>
+                  <p className="text-slate-400 text-[11px] sm:text-xs leading-relaxed">
+                    Displays any conflicting reports, fact-checks, or refutations from reputable debunker outlets with direct links to the debunking articles whenever misinformation is detected.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/40 border border-slate-800/80">
-                <FileDown className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">1-Click PDF Report & History</h4>
-                  <p className="text-slate-400 text-[11px] mt-0.5">
-                    Download an audit-ready verification PDF report to share, or visit your Verification History to view past results.
+              {/* Discovered Sources & Evidence */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start gap-3.5">
+                <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shrink-0 mt-0.5">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-100 text-xs sm:text-sm">Discovered Sources & Evidence</h4>
+                  <p className="text-slate-400 text-[11px] sm:text-xs leading-relaxed">
+                    Full list of all discovered web news articles indexed during the verification, including source credibility ratings (High/Medium/Regional), search/filter tools, and direct external links to original publisher articles.
+                  </p>
+                </div>
+              </div>
+
+              {/* Chronological Event Timeline */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start gap-3.5">
+                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shrink-0 mt-0.5">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-100 text-xs sm:text-sm">Chronological Event Timeline</h4>
+                  <p className="text-slate-400 text-[11px] sm:text-xs leading-relaxed">
+                    Maps out the sequence of events as they unfolded across different news outlets over time, making it easy to see when a story first broke and how reporting evolved.
+                  </p>
+                </div>
+              </div>
+
+              {/* Structured AI Evidence Analysis */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start gap-3.5">
+                <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 shrink-0 mt-0.5">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-100 text-xs sm:text-sm">Structured AI Evidence Analysis</h4>
+                  <p className="text-slate-400 text-[11px] sm:text-xs leading-relaxed">
+                    Entity and factual breakdown strictly synthesized from retrieved articles (zero invented facts) — highlighting key people, involved organizations, locations, important numbers/amounts, and an executive summary.
+                  </p>
+                </div>
+              </div>
+
+              {/* Downloadable PDF & History */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-start gap-3.5">
+                <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0 mt-0.5">
+                  <FileDown className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-100 text-xs sm:text-sm">1-Click PDF Report & History</h4>
+                  <p className="text-slate-400 text-[11px] sm:text-xs leading-relaxed">
+                    Download complete audit-ready verification PDF reports for offline sharing or citation, and access your previous verifications anytime via the History tab.
                   </p>
                 </div>
               </div>
