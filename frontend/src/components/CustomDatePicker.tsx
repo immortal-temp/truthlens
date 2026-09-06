@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, X, Check } from 'lucide-react';
 
 interface CustomDatePickerProps {
   value: string; // YYYY-MM-DD format
@@ -26,10 +26,10 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [tempSelectedDate, setTempSelectedDate] = useState<string>(value);
 
-  // View Mode: 'days' | 'months' | 'years'
-  const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
+  // View Mode: 'days' | 'wheel_picker'
+  const [viewMode, setViewMode] = useState<'days' | 'wheel_picker'>('days');
 
-  // Parse initial selected date or default to current date
+  // Active view date
   const parsedDate = value ? new Date(value + 'T00:00:00') : new Date();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
@@ -37,8 +37,12 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const [viewYear, setViewYear] = useState<number>(parsedDate.getFullYear() || currentYear);
   const [viewMonth, setViewMonth] = useState<number>(parsedDate.getMonth() || currentMonth);
 
-  const yearListRef = useRef<HTMLDivElement>(null);
-  const selectedYearRef = useRef<HTMLButtonElement>(null);
+  // Staged values while scrolling inside the Month/Year Wheel Picker
+  const [rollerMonth, setRollerMonth] = useState<number>(viewMonth);
+  const [rollerYear, setRollerYear] = useState<number>(viewYear);
+
+  const monthScrollRef = useRef<HTMLDivElement>(null);
+  const yearScrollRef = useRef<HTMLDivElement>(null);
 
   // Keep view in sync when value changes or dialog opens
   useEffect(() => {
@@ -46,22 +50,38 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       setTempSelectedDate(value);
       const d = new Date(value + 'T00:00:00');
       if (!isNaN(d.getTime())) {
-        setViewYear(Math.min(d.getFullYear(), currentYear));
-        setViewMonth(d.getMonth());
+        const y = Math.min(d.getFullYear(), currentYear);
+        const m = d.getMonth();
+        setViewYear(y);
+        setViewMonth(m);
+        setRollerYear(y);
+        setRollerMonth(m);
       }
     }
   }, [value, isOpen, currentYear]);
 
-  // When switching to 'years' mode, auto-scroll to the selected year
+  // Sync roller when entering wheel_picker mode & auto-scroll into center
   useEffect(() => {
-    if (viewMode === 'years') {
+    if (viewMode === 'wheel_picker') {
+      setRollerMonth(viewMonth);
+      setRollerYear(viewYear);
+
       setTimeout(() => {
-        if (selectedYearRef.current) {
-          selectedYearRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (monthScrollRef.current) {
+          const activeMonthEl = monthScrollRef.current.querySelector(`[data-month="${viewMonth}"]`) as HTMLElement;
+          if (activeMonthEl) {
+            activeMonthEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+        }
+        if (yearScrollRef.current) {
+          const activeYearEl = yearScrollRef.current.querySelector(`[data-year="${viewYear}"]`) as HTMLElement;
+          if (activeYearEl) {
+            activeYearEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
         }
       }, 50);
     }
-  }, [viewMode]);
+  }, [viewMode, viewMonth, viewYear]);
 
   // Lock body scroll and handle Escape key when modal is open
   useEffect(() => {
@@ -88,50 +108,27 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     };
   }, [isOpen, viewMode]);
 
-  // Header navigation arrows
-  const handlePrev = (e: React.MouseEvent) => {
+  // Month navigation arrows in Days view
+  const handlePrevMonth = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (viewMode === 'days') {
-      if (viewMonth === 0) {
-        setViewMonth(11);
-        setViewYear(prev => prev - 1);
-      } else {
-        setViewMonth(prev => prev - 1);
-      }
-    } else if (viewMode === 'months') {
-      // Decrement year when selecting months
+    if (viewMonth === 0) {
+      setViewMonth(11);
       setViewYear(prev => prev - 1);
-    } else if (viewMode === 'years') {
-      // Scroll or shift years back
-      if (yearListRef.current) {
-        yearListRef.current.scrollBy({ top: -120, behavior: 'smooth' });
-      }
+    } else {
+      setViewMonth(prev => prev - 1);
     }
   };
 
-  const handleNext = (e: React.MouseEvent) => {
+  const handleNextMonth = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (viewMode === 'days') {
-      if (viewMonth === 11) {
-        if (viewYear < currentYear) {
-          setViewMonth(0);
-          setViewYear(prev => prev + 1);
-        }
-      } else {
-        // Can advance month as long as year is <= currentYear
-        if (viewYear < currentYear || viewMonth < 11) {
-          setViewMonth(prev => prev + 1);
-        }
-      }
-    } else if (viewMode === 'months') {
-      // Increment year up to currentYear
+    if (viewMonth === 11) {
       if (viewYear < currentYear) {
+        setViewMonth(0);
         setViewYear(prev => prev + 1);
       }
-    } else if (viewMode === 'years') {
-      // Scroll or shift years forward
-      if (yearListRef.current) {
-        yearListRef.current.scrollBy({ top: 120, behavior: 'smooth' });
+    } else {
+      if (viewYear < currentYear || viewMonth < 11) {
+        setViewMonth(prev => prev + 1);
       }
     }
   };
@@ -143,14 +140,17 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     setTempSelectedDate(formatted);
   };
 
-  const handleSelectMonth = (monthIndex: number) => {
-    setViewMonth(monthIndex);
+  // Confirm Month-Year Wheel Roller selection
+  const handleConfirmRoller = () => {
+    setViewMonth(rollerMonth);
+    setViewYear(rollerYear);
     setViewMode('days');
   };
 
-  const handleSelectYear = (year: number) => {
-    setViewYear(year);
-    setViewMode('months'); // Proceed to month selection or directly to days
+  const handleCancelRoller = () => {
+    setRollerMonth(viewMonth);
+    setRollerYear(viewYear);
+    setViewMode('days');
   };
 
   const handleApply = () => {
@@ -170,10 +170,12 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     setTempSelectedDate(formatted);
     setViewYear(y);
     setViewMonth(today.getMonth());
+    setRollerYear(y);
+    setRollerMonth(today.getMonth());
     setViewMode('days');
   };
 
-  // Generate calendar days
+  // Generate calendar days for Day view
   const firstDayOfMonth = new Date(viewYear, viewMonth, 1).getDay();
   const daysInCurrentMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
@@ -207,7 +209,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return selY === viewYear && selM === viewMonth + 1 && selD === d;
   };
 
-  // Generate Year list strictly up to current year (e.g. 2026 down to 1970)
+  // Available Years strictly bounded up to current year (e.g. 2026 down to 1970)
   const startYear = 1970;
   const availableYears = [];
   for (let y = currentYear; y >= startYear; y--) {
@@ -271,7 +273,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
             className="w-full max-w-sm sm:max-w-md bg-[#0d1322] border border-slate-700/90 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl shadow-black/90 relative animate-in zoom-in-95 duration-150 space-y-3.5 sm:space-y-4 max-h-[92vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
+            {/* Modal Top Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2 sm:gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 p-0.5 shadow-md shadow-sky-500/20 shrink-0">
@@ -297,78 +299,46 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
               </button>
             </div>
 
-            {/* Calendar Controls (Month / Year interactive triggers) */}
-            <div className="flex items-center justify-between px-1 py-1 shrink-0">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {/* Clickable Month Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setViewMode(viewMode === 'months' ? 'days' : 'months')}
-                  className={`px-2.5 py-1 rounded-xl text-sm sm:text-base font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
-                    viewMode === 'months'
-                      ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25 ring-1 ring-sky-300'
-                      : 'text-white hover:bg-slate-800 hover:text-sky-300'
-                  }`}
-                  title="Click to select month"
-                >
-                  <span>{MONTH_NAMES[viewMonth]}</span>
-                </button>
-
-                {/* Clickable Year Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setViewMode(viewMode === 'years' ? 'days' : 'years')}
-                  className={`px-2.5 py-1 rounded-xl text-sm sm:text-base font-bold font-mono transition-all cursor-pointer flex items-center gap-1 ${
-                    viewMode === 'years'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25 ring-1 ring-indigo-300'
-                      : 'text-sky-400 hover:bg-slate-800 hover:text-sky-200'
-                  }`}
-                  title="Click to select year"
-                >
-                  <span>{viewYear}</span>
-                </button>
-              </div>
-
-              {/* Back / Forward Controls (Context-Aware) */}
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
-                  title={
-                    viewMode === 'days'
-                      ? 'Previous Month'
-                      : viewMode === 'months'
-                      ? 'Previous Year'
-                      : 'Scroll Past Years'
-                  }
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={
-                    (viewMode === 'months' && viewYear >= currentYear) ||
-                    (viewMode === 'days' && viewYear >= currentYear && viewMonth >= 11)
-                  }
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={
-                    viewMode === 'days'
-                      ? 'Next Month'
-                      : viewMode === 'months'
-                      ? 'Next Year'
-                      : 'Scroll Recent Years'
-                  }
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* VIEW 1: Standard Days Calendar View */}
+            {/* Main Calendar View: Day Grid with Single Combined Month-Year Header Button */}
             {viewMode === 'days' && (
-              <div className="space-y-1">
+              <>
+                {/* Header with single button for Month & Year */}
+                <div className="flex items-center justify-between px-1 py-1 shrink-0">
+                  {/* Single combined month & year button */}
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('wheel_picker')}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 hover:border-sky-500/40 text-sm sm:text-base font-extrabold text-white flex items-center gap-2 transition-all cursor-pointer group shadow-sm"
+                    title="Click to change Month and Year"
+                  >
+                    <span className="group-hover:text-sky-300 transition-colors">
+                      {MONTH_NAMES[viewMonth]} {viewYear}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-sky-400 group-hover:translate-y-0.5 transition-transform" />
+                  </button>
+
+                  {/* Previous / Next Month Arrows */}
+                  <div className="flex items-center gap-1 sm:gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
+                      title="Previous Month"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      disabled={viewYear >= currentYear && viewMonth >= 11}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Next Month"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
                 {/* Weekdays Header */}
                 <div className="grid grid-cols-7 gap-1 text-center">
                   {DAYS_OF_WEEK.map(day => (
@@ -440,125 +410,139 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
 
-            {/* VIEW 2: Months Grid View (4 columns x 3 rows) */}
-            {viewMode === 'months' && (
-              <div className="space-y-3 py-2">
-                <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-                  <span>Select Month for <b className="text-sky-300 font-mono">{viewYear}</b>:</span>
+                {/* Bottom Actions Bar */}
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setViewMode('days')}
-                    className="text-[11px] text-sky-400 hover:underline"
+                    onClick={handleSetToday}
+                    className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-800/80 hover:bg-sky-500/20 text-slate-300 hover:text-sky-300 border border-slate-700/60 text-[11px] sm:text-xs font-bold transition-all cursor-pointer"
                   >
-                    Back to Days
+                    Today
                   </button>
-                </div>
 
-                <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
-                  {MONTH_NAMES.map((mName, idx) => {
-                    const isSelectedMonth = viewMonth === idx;
-                    const isCurrentMonthNow = currentYear === viewYear && currentMonth === idx;
-
-                    return (
-                      <button
-                        key={mName}
-                        type="button"
-                        onClick={() => handleSelectMonth(idx)}
-                        className={`py-3 sm:py-3.5 px-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
-                          isSelectedMonth
-                            ? 'bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-extrabold shadow-lg shadow-sky-500/25 ring-2 ring-sky-400 scale-105'
-                            : isCurrentMonthNow
-                            ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30 hover:bg-sky-500/25'
-                            : 'bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-800'
-                        }`}
-                      >
-                        <span>{MONTH_SHORT[idx]}</span>
-                        <span className="text-[9px] font-normal opacity-70 hidden sm:inline">{mName}</span>
-                      </button>
-                    );
-                  })}
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(false)}
+                      className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApply}
+                      className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-[11px] sm:text-xs font-extrabold shadow-md shadow-sky-500/20 transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Apply Date</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
 
-            {/* VIEW 3: Scrollable Years View (Up to Current Year 2026, scroll down for past) */}
-            {viewMode === 'years' && (
-              <div className="space-y-2 py-1">
-                <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-                  <span>Select Year (Past up to <b className="text-sky-300 font-mono">{currentYear}</b>):</span>
+            {/* VIEW 2: Month & Year Scroll Wheel / Drum Picker (Matching User's Reference Layout) */}
+            {viewMode === 'wheel_picker' && (
+              <div className="space-y-4 py-2">
+                {/* Header: Dynamic Selected Month - Year (e.g. JANUARY - 2000) */}
+                <div className="text-center pb-2 border-b border-slate-800/80">
+                  <h4 className="text-base sm:text-lg font-black text-white tracking-wider uppercase font-mono">
+                    {MONTH_NAMES[rollerMonth]} - {rollerYear}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Scroll to select month and past year up to {currentYear}
+                  </p>
+                </div>
+
+                {/* Dual-Wheel Scroll Roller Container */}
+                <div className="relative h-48 sm:h-52 w-full bg-slate-950/60 rounded-2xl border border-slate-800 overflow-hidden flex">
+                  
+                  {/* Center Selection Focus Window with Upper & Lower Glass Divider Lines */}
+                  <div className="pointer-events-none absolute inset-x-3 top-1/2 -translate-y-1/2 h-11 border-y-2 border-sky-500/40 bg-sky-500/10 rounded-lg shadow-sm shadow-sky-500/10" />
+
+                  {/* Top & Bottom Fade Overlay Masks for 3D Roller Effect */}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[#0d1322] via-[#0d1322]/80 to-transparent z-10" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#0d1322] via-[#0d1322]/80 to-transparent z-10" />
+
+                  {/* Left Column: Month Roller */}
+                  <div 
+                    ref={monthScrollRef}
+                    className="flex-1 h-full overflow-y-auto py-18 px-2 scroll-smooth text-center scrollbar-none space-y-1"
+                    style={{ scrollSnapType: 'y mandatory' }}
+                  >
+                    {MONTH_NAMES.map((mName, idx) => {
+                      const isSelected = rollerMonth === idx;
+                      return (
+                        <button
+                          key={mName}
+                          data-month={idx}
+                          type="button"
+                          onClick={() => setRollerMonth(idx)}
+                          style={{ scrollSnapAlign: 'center' }}
+                          className={`w-full py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center ${
+                            isSelected
+                              ? 'text-sky-300 font-extrabold text-sm sm:text-base scale-110 shadow-sm'
+                              : 'text-slate-500 hover:text-slate-300 opacity-60 hover:opacity-90'
+                          }`}
+                        >
+                          <span>{MONTH_SHORT[idx]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Subtle Vertical Divider */}
+                  <div className="w-[1px] bg-slate-800/80 my-4 z-20" />
+
+                  {/* Right Column: Year Roller (Current Year down to 1970) */}
+                  <div 
+                    ref={yearScrollRef}
+                    className="flex-1 h-full overflow-y-auto py-18 px-2 scroll-smooth text-center scrollbar-none space-y-1"
+                    style={{ scrollSnapType: 'y mandatory' }}
+                  >
+                    {availableYears.map(yr => {
+                      const isSelected = rollerYear === yr;
+                      return (
+                        <button
+                          key={yr}
+                          data-year={yr}
+                          type="button"
+                          onClick={() => setRollerYear(yr)}
+                          style={{ scrollSnapAlign: 'center' }}
+                          className={`w-full py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all cursor-pointer flex items-center justify-center ${
+                            isSelected
+                              ? 'text-sky-300 font-extrabold text-sm sm:text-base scale-110 shadow-sm'
+                              : 'text-slate-500 hover:text-slate-300 opacity-60 hover:opacity-90'
+                          }`}
+                        >
+                          <span>{yr}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Roller Footer Actions: CANCEL and OK (Matching user's reference) */}
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setViewMode('days')}
-                    className="text-[11px] text-sky-400 hover:underline"
+                    onClick={handleCancelRoller}
+                    className="px-4 py-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors cursor-pointer"
                   >
-                    Back to Days
+                    Cancel
                   </button>
-                </div>
 
-                <div 
-                  ref={yearListRef}
-                  className="max-h-56 sm:max-h-64 overflow-y-auto pr-1 grid grid-cols-4 gap-2 scrollbar-thin scrollbar-thumb-slate-700"
-                >
-                  {availableYears.map(yr => {
-                    const isSelectedYr = viewYear === yr;
-                    const isCurrentYrNow = currentYear === yr;
-
-                    return (
-                      <button
-                        key={yr}
-                        ref={isSelectedYr ? selectedYearRef : null}
-                        type="button"
-                        onClick={() => handleSelectYear(yr)}
-                        className={`py-3 px-2 rounded-2xl text-xs sm:text-sm font-mono font-bold transition-all cursor-pointer flex items-center justify-center ${
-                          isSelectedYr
-                            ? 'bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-extrabold shadow-lg shadow-sky-500/25 ring-2 ring-sky-400 scale-105'
-                            : isCurrentYrNow
-                            ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30 hover:bg-sky-500/25'
-                            : 'bg-slate-900/80 hover:bg-slate-800 text-slate-200 border border-slate-800'
-                        }`}
-                      >
-                        {yr}
-                      </button>
-                    );
-                  })}
+                  <button
+                    type="button"
+                    onClick={handleConfirmRoller}
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-md shadow-sky-500/25 transition-all cursor-pointer"
+                  >
+                    OK
+                  </button>
                 </div>
               </div>
             )}
-
-            {/* Bottom Actions Bar */}
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={handleSetToday}
-                className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-800/80 hover:bg-sky-500/20 text-slate-300 hover:text-sky-300 border border-slate-700/60 text-[11px] sm:text-xs font-bold transition-all cursor-pointer"
-              >
-                Today
-              </button>
-
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsOpen(false);
-                    setViewMode('days');
-                  }}
-                  className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] sm:text-xs font-semibold transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApply}
-                  className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white text-[11px] sm:text-xs font-extrabold shadow-md shadow-sky-500/20 transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Apply Date</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
