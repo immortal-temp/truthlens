@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, X, Check } from 'lucide-react';
 
 interface CustomDatePickerProps {
@@ -18,6 +18,8 @@ const MONTH_SHORT = [
 ];
 
 const DAYS_OF_WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+const ITEM_HEIGHT = 40; // Exact height of each wheel item in px
 
 export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   value,
@@ -43,6 +45,13 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   const monthScrollRef = useRef<HTMLDivElement>(null);
   const yearScrollRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticScroll = useRef<boolean>(false);
+
+  // Available Years strictly bounded up to current year (e.g. 2026 down to 1970)
+  const startYear = 1970;
+  const availableYears = useRef<number[]>(
+    Array.from({ length: currentYear - startYear + 1 }, (_, i) => currentYear - i)
+  ).current;
 
   // Keep view in sync when value changes or dialog opens
   useEffect(() => {
@@ -60,28 +69,47 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     }
   }, [value, isOpen, currentYear]);
 
-  // Sync roller when entering wheel_picker mode & auto-scroll into center
+  // Programmatically scroll a column to a specific index
+  const scrollToMonthIndex = useCallback((index: number, smooth: boolean = true) => {
+    if (monthScrollRef.current) {
+      isProgrammaticScroll.current = true;
+      monthScrollRef.current.scrollTo({
+        top: index * ITEM_HEIGHT,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 300);
+    }
+  }, []);
+
+  const scrollToYearIndex = useCallback((year: number, smooth: boolean = true) => {
+    const yearIndex = availableYears.indexOf(year);
+    if (yearIndex !== -1 && yearScrollRef.current) {
+      isProgrammaticScroll.current = true;
+      yearScrollRef.current.scrollTo({
+        top: yearIndex * ITEM_HEIGHT,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 300);
+    }
+  }, [availableYears]);
+
+  // Sync roller position when entering wheel_picker mode
   useEffect(() => {
     if (viewMode === 'wheel_picker') {
       setRollerMonth(viewMonth);
       setRollerYear(viewYear);
 
+      // Timeout to ensure DOM is rendered before scrolling
       setTimeout(() => {
-        if (monthScrollRef.current) {
-          const activeMonthEl = monthScrollRef.current.querySelector(`[data-month="${viewMonth}"]`) as HTMLElement;
-          if (activeMonthEl) {
-            activeMonthEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          }
-        }
-        if (yearScrollRef.current) {
-          const activeYearEl = yearScrollRef.current.querySelector(`[data-year="${viewYear}"]`) as HTMLElement;
-          if (activeYearEl) {
-            activeYearEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          }
-        }
-      }, 50);
+        scrollToMonthIndex(viewMonth, false);
+        scrollToYearIndex(viewYear, false);
+      }, 60);
     }
-  }, [viewMode, viewMonth, viewYear]);
+  }, [viewMode, viewMonth, viewYear, scrollToMonthIndex, scrollToYearIndex]);
 
   // Lock body scroll and handle Escape key when modal is open
   useEffect(() => {
@@ -107,6 +135,41 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, viewMode]);
+
+  // Live scroll listener for Month Roller
+  const handleMonthScroll = () => {
+    if (isProgrammaticScroll.current || !monthScrollRef.current) return;
+    const scrollTop = monthScrollRef.current.scrollTop;
+    const index = Math.round(scrollTop / ITEM_HEIGHT);
+    const clampedIndex = Math.max(0, Math.min(11, index));
+    if (clampedIndex !== rollerMonth) {
+      setRollerMonth(clampedIndex);
+    }
+  };
+
+  // Live scroll listener for Year Roller
+  const handleYearScroll = () => {
+    if (isProgrammaticScroll.current || !yearScrollRef.current) return;
+    const scrollTop = yearScrollRef.current.scrollTop;
+    const index = Math.round(scrollTop / ITEM_HEIGHT);
+    const clampedIndex = Math.max(0, Math.min(availableYears.length - 1, index));
+    const selectedYr = availableYears[clampedIndex];
+    if (selectedYr && selectedYr !== rollerYear) {
+      setRollerYear(selectedYr);
+    }
+  };
+
+  // Click on specific month in roller
+  const handleMonthClick = (index: number) => {
+    setRollerMonth(index);
+    scrollToMonthIndex(index, true);
+  };
+
+  // Click on specific year in roller
+  const handleYearClick = (year: number) => {
+    setRollerYear(year);
+    scrollToYearIndex(year, true);
+  };
 
   // Month navigation arrows in Days view
   const handlePrevMonth = (e: React.MouseEvent) => {
@@ -209,13 +272,6 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     return selY === viewYear && selM === viewMonth + 1 && selD === d;
   };
 
-  // Available Years strictly bounded up to current year (e.g. 2026 down to 1970)
-  const startYear = 1970;
-  const availableYears = [];
-  for (let y = currentYear; y >= startYear; y--) {
-    availableYears.push(y);
-  }
-
   const formattedDisplay = (dateStr: string) => {
     if (!dateStr) return 'Select associated event date...';
     try {
@@ -304,7 +360,6 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
               <>
                 {/* Header with single button for Month & Year */}
                 <div className="flex items-center justify-between px-1 py-1 shrink-0">
-                  {/* Single combined month & year button */}
                   <button
                     type="button"
                     onClick={() => setViewMode('wheel_picker')}
@@ -442,88 +497,86 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
               </>
             )}
 
-            {/* VIEW 2: Month & Year Scroll Wheel / Drum Picker (Matching User's Reference Layout) */}
+            {/* VIEW 2: Glowing Centered Month & Year Dual-Wheel Roller Picker */}
             {viewMode === 'wheel_picker' && (
               <div className="space-y-4 py-2">
-                {/* Header: Dynamic Selected Month - Year (e.g. JANUARY - 2000) */}
-                <div className="text-center pb-2 border-b border-slate-800/80">
-                  <h4 className="text-base sm:text-lg font-black text-white tracking-wider uppercase font-mono">
+                {/* Header: Dynamic Glowing Title (e.g. SEPTEMBER - 2026) */}
+                <div className="text-center pb-2 border-b border-slate-800/80 space-y-1">
+                  <h4 className="text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-sky-200 to-indigo-300 tracking-wider uppercase font-mono drop-shadow-[0_0_12px_rgba(56,189,248,0.5)]">
                     {MONTH_NAMES[rollerMonth]} - {rollerYear}
                   </h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    Scroll to select month and past year up to {currentYear}
+                  <p className="text-[10px] text-slate-400">
+                    Scroll or click to select month and past year up to {currentYear}
                   </p>
                 </div>
 
-                {/* Dual-Wheel Scroll Roller Container */}
-                <div className="relative h-48 sm:h-52 w-full bg-slate-950/60 rounded-2xl border border-slate-800 overflow-hidden flex">
+                {/* Dual-Wheel Scroll Roller Box (Height: 200px, Item: 40px, Spacer: 80px) */}
+                <div className="relative h-[200px] w-full bg-slate-950/70 rounded-2xl border border-slate-800 overflow-hidden flex">
                   
-                  {/* Center Selection Focus Window with Upper & Lower Glass Divider Lines */}
-                  <div className="pointer-events-none absolute inset-x-3 top-1/2 -translate-y-1/2 h-11 border-y-2 border-sky-500/40 bg-sky-500/10 rounded-lg shadow-sm shadow-sky-500/10" />
+                  {/* Center Selection Focus Window with Glowing Borders & Glass Highlight */}
+                  <div className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-[40px] border-y border-sky-500/50 bg-sky-500/15 rounded-xl shadow-lg shadow-sky-500/15 z-10" />
 
-                  {/* Top & Bottom Fade Overlay Masks for 3D Roller Effect */}
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[#0d1322] via-[#0d1322]/80 to-transparent z-10" />
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#0d1322] via-[#0d1322]/80 to-transparent z-10" />
+                  {/* Top & Bottom Fade Overlay Masks for 3D Roller Curvature */}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#0d1322] via-[#0d1322]/85 to-transparent z-20" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d1322] via-[#0d1322]/85 to-transparent z-20" />
 
                   {/* Left Column: Month Roller */}
                   <div 
                     ref={monthScrollRef}
-                    className="flex-1 h-full overflow-y-auto py-18 px-2 scroll-smooth text-center scrollbar-none space-y-1"
+                    onScroll={handleMonthScroll}
+                    className="flex-1 h-full overflow-y-auto px-2 scroll-smooth text-center scrollbar-none py-[80px]"
                     style={{ scrollSnapType: 'y mandatory' }}
                   >
                     {MONTH_NAMES.map((mName, idx) => {
                       const isSelected = rollerMonth === idx;
                       return (
-                        <button
+                        <div
                           key={mName}
-                          data-month={idx}
-                          type="button"
-                          onClick={() => setRollerMonth(idx)}
-                          style={{ scrollSnapAlign: 'center' }}
-                          className={`w-full py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center justify-center ${
+                          style={{ height: `${ITEM_HEIGHT}px`, scrollSnapAlign: 'center' }}
+                          onClick={() => handleMonthClick(idx)}
+                          className={`w-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer select-none ${
                             isSelected
-                              ? 'text-sky-300 font-extrabold text-sm sm:text-base scale-110 shadow-sm'
-                              : 'text-slate-500 hover:text-slate-300 opacity-60 hover:opacity-90'
+                              ? 'text-sky-300 font-black text-sm sm:text-base scale-110 drop-shadow-[0_0_8px_rgba(56,189,248,0.9)]'
+                              : 'text-slate-500 hover:text-slate-300 opacity-50 hover:opacity-80'
                           }`}
                         >
                           <span>{MONTH_SHORT[idx]}</span>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
 
                   {/* Subtle Vertical Divider */}
-                  <div className="w-[1px] bg-slate-800/80 my-4 z-20" />
+                  <div className="w-[1px] bg-slate-800/80 my-3 z-30" />
 
-                  {/* Right Column: Year Roller (Current Year down to 1970) */}
+                  {/* Right Column: Year Roller (Strictly up to current year 2026 down to 1970) */}
                   <div 
                     ref={yearScrollRef}
-                    className="flex-1 h-full overflow-y-auto py-18 px-2 scroll-smooth text-center scrollbar-none space-y-1"
+                    onScroll={handleYearScroll}
+                    className="flex-1 h-full overflow-y-auto px-2 scroll-smooth text-center scrollbar-none py-[80px]"
                     style={{ scrollSnapType: 'y mandatory' }}
                   >
                     {availableYears.map(yr => {
                       const isSelected = rollerYear === yr;
                       return (
-                        <button
+                        <div
                           key={yr}
-                          data-year={yr}
-                          type="button"
-                          onClick={() => setRollerYear(yr)}
-                          style={{ scrollSnapAlign: 'center' }}
-                          className={`w-full py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all cursor-pointer flex items-center justify-center ${
+                          style={{ height: `${ITEM_HEIGHT}px`, scrollSnapAlign: 'center' }}
+                          onClick={() => handleYearClick(yr)}
+                          className={`w-full flex items-center justify-center text-xs sm:text-sm font-mono font-bold transition-all duration-200 cursor-pointer select-none ${
                             isSelected
-                              ? 'text-sky-300 font-extrabold text-sm sm:text-base scale-110 shadow-sm'
-                              : 'text-slate-500 hover:text-slate-300 opacity-60 hover:opacity-90'
+                              ? 'text-sky-300 font-black text-sm sm:text-base scale-110 drop-shadow-[0_0_8px_rgba(56,189,248,0.9)]'
+                              : 'text-slate-500 hover:text-slate-300 opacity-50 hover:opacity-80'
                           }`}
                         >
                           <span>{yr}</span>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Roller Footer Actions: CANCEL and OK (Matching user's reference) */}
+                {/* Roller Footer Actions: CANCEL and OK */}
                 <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3 shrink-0">
                   <button
                     type="button"
